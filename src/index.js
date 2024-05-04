@@ -2,23 +2,26 @@
 
 import dotenv from 'dotenv'
 import connectDB from './db/index.js'
+import express from 'express'
 
 dotenv.config({
   path:'./.env'
 })
 
+
+
+const app = express()
+
 /*
 1st approach to connect db 
 
-import express from 'express'
 
-const app = express()
 
 ;(async () =>{
   try {
    await mongoose.connect(`${process.env.MONGODB_URI}/${DB_Name}`)
-   app.on("error" , (error)=>{
-    console.loh(error)
+   app.on("error" , (error)=>{   //on is a express app listener
+    console.log(error)
     throw error
    })
 
