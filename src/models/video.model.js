@@ -42,6 +42,7 @@ const videoSchema = new Schema(
     }
 )
 
+//Plugins are a tool for reusing logic in multiple schemas.
 videoSchema.plugin(mongooseAggregatePaginate)
 
 export const Video = mongoose.model("Video", videoSchema)
