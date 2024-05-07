@@ -4,6 +4,25 @@ import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshTokens = async (userId) =>{
+  try {
+    const user = await User.findById(userId)
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
+    
+    // we have to save the generated refresh token in the DB
+    user.refreshToken = refreshToken
+    await user.save({validateBeforeSave: false})
+
+    return{ accessToken , refreshToken}
+
+  } catch (error) {
+    throw new ApiError(500 , "something went wrong while generating refresh and Access token")
+  }
+}
+
+
+
 const registerUser = asyncHandler( async (req ,res)=>{
   // get user details from frontend
   // validation- check not empty
@@ -16,7 +35,7 @@ const registerUser = asyncHandler( async (req ,res)=>{
   // return res
 
   const {fullName , email , username , password} = req.body
-  console.log("email", email)
+  //console.log("email", email)
 
   // here we are checking if the input is not empty 
 
@@ -34,7 +53,7 @@ const registerUser = asyncHandler( async (req ,res)=>{
   // if the particular input data exist or not
   // operator = $or :- is used for checking two data values , like either the email or username exist , we will send user a message that this username or email 
   // exist try another
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{username} , {email} ]
   })
 
@@ -88,4 +107,78 @@ const registerUser = asyncHandler( async (req ,res)=>{
 
 })
 
-export  { registerUser}
+const loginUser = asyncHandler ( async (req , res)=>{
+  // req body se data le aao
+  // username or email 
+  // find the user
+  // password check 
+  // access and refresh token
+  // send cookies
+
+  const { email , username , password} = req.body
+
+  if ( !username || !email){
+    throw new ApiError(400 , "username or email is required")
+  }
+
+  const user = await User.findOne({
+    $or:[{username}, {email}] // or operator value find karega email ya username k through
+  })
+
+  if (!user){
+    throw new ApiError(404 , "Users does not exist")
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password)   // ye user hum log wala user hai , jo hum log ne schema mai banaya tha
+
+  if (!isPasswordValid){
+    throw new ApiError(401 , "Password is incorrect")
+  }
+  
+  const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+  const loggedInUser = await User.findById(_id).select("-password -refreshToken ")
+
+  //cookies
+  //initially cookies can be modified by any one in frontend , to make it only modified by server , we have to do  httpOnly true and secure true 
+  const options = {
+    httpOnly : true,
+    secure: true,
+  }
+
+  return res.
+  status(200)
+  .cookie("acessToken", accessToken , options)
+  .cookie("refreshToken" , refreshToken , options)
+  .json( new ApiResponse(
+    200 ,
+    {
+      user: loggedInUser , accessToken , refreshToken
+    },
+    "User logged in successfully"
+  ))
+
+})
+
+const logoutUser = asyncHandler( async (req , res)=>{
+  await  User.findOneAndUpdate(req.user._id , 
+  {
+   $set:{refreshToken: undefined}
+  },
+  {
+    new: true
+  }
+)
+const options = {
+  httpOnly : true,
+  secure: true,
+}
+
+return res.status(200).clearCookie("accessToken" , options).clearCookie("refreshToken" , options).json(new ApiResponse(200 , "User logged out successfully"))
+
+
+
+})
+
+
+export  { registerUser , loginUser , logoutUser}
