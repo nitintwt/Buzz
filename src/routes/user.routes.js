@@ -5,9 +5,8 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router()
 
-
 // upload is a middleware , so it will just execute before user registration
-// fileds accepts array , multer helps in file upload, so here we will take avatar and cover image
+// fields accepts array , multer helps in file upload, so here we will take avatar and cover image
 router.route("/register").post(upload.fields([
   {
     name: "avatar",

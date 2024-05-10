@@ -20,7 +20,9 @@ try {
       throw new ApiError(401 , "Invalid Access Token")
     }
     
-    // request k andar k anadar naya object add karde rahe hai , user
+    // request k andar naya object add karde rahe hai , user
+    // req mai user ka data save ho gaya shai login k baad , so ab iss k baad kabhi bhi
+    // user ka data use karna hoga toh , req.user kar k nikal lenge
     req.user = user;
     next()
 } catch (error) {
